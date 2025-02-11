@@ -14,14 +14,12 @@ RELEASE="$(rpm -E %fedora)"
 
 # this installs a package from fedora repos
 rpm-ostree install screen
-#Build and install tuxedo drivers
+
 rpm-ostree install rpm-build
 rpm-ostree install rpmdevtools
 rpm-ostree install kmodtool
 
 export HOME=/tmp
-
-cd /tmp
 
 rpmdev-setuptree
 
@@ -41,27 +39,19 @@ KERNEL_VERSION="$(rpm -q kernel --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}')"
 
 akmods --force --kernels "${KERNEL_VERSION}" --kmod "tuxedo-drivers-kmod"
 
-#Hacky workaround to make TCC install elsewhere
-mkdir -p /usr/share
-rm /opt
-ln -s /usr/share /opt
-
-rpm-ostree install tuxedo-control-center
-
-cd /
-rm /opt
-ln -s var/opt /opt
-ls -al /
-
-rm /usr/bin/tuxedo-control-center
-ln -s /usr/share/tuxedo-control-center/tuxedo-control-center /usr/bin/tuxedo-control-center
-
-sed -i 's|/opt|/usr/share|g' /etc/systemd/system/tccd.service
-sed -i 's|/opt|/usr/share|g' /usr/share/applications/tuxedo-control-center.desktop
-
-systemctl enable tccd.service
-
-systemctl enable tccd-sleep.service
+rpm-ostree install cargo rust meson ninja-build libadwaita-devel gtk4-devel
+git clone https://github.com/BrickMan240/tuxedo-rs
+cd tuxedo-rs
+cd tailord
+meson setup --prefix=/usr _build
+ninja -C _build
+ninja -C _build install
+systemctl enable tailord.service
+cd ../tailor_gui
+meson setup --prefix=/usr _build
+ninja -C _build
+ninja -C _build install
+cd ../..
 
 # this would install a package from rpmfusion
 # rpm-ostree install vlc
