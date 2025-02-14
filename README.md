@@ -1,3 +1,6 @@
+In order to use:
+`rpm-ostree rebase ostree-unverified-registry:ghcr.io/brickman240/tuxedo-rs-<insert desired image name here without brackets>`
+
 # image-template
 
 # Purpose
