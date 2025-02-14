@@ -2,8 +2,9 @@
 
 set -ouex pipefail
 
-RELEASE="$(rpm -E %fedora)"
-
+ARCH="$(rpm -E '%_arch')"
+KERNEL="$(rpm -q "${KERNEL_NAME:-kernel}" --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}')"
+RELEASE="$(rpm -E '%fedora')"
 
 ### Install packages
 
@@ -23,21 +24,13 @@ export HOME=/tmp
 
 rpmdev-setuptree
 
-git clone https://github.com/BrickMan240/tuxedo-drivers-kmod
+curl -LsSf -o /etc/yum.repos.d/_copr_gladion136-tuxedo-drivers-kmod.repo "https://copr.fedorainfracloud.org/coprs/gladion136/tuxedo-drivers-kmod/repo/fedora-${RELEASE}/gladion136-tuxedo-drivers-kmod-fedora-${RELEASE}.repo"
 
-cd tuxedo-drivers-kmod/
-./build.sh
-cd ..
+### BUILD tuxedo-drivers (succeed or fail-fast with debug output)
+dnf install -y \
+    "akmod-tuxedo-drivers-*.fc${RELEASE}.${ARCH}"
 
-# Extract the Version value from the spec file
-export TD_VERSION=$(cat tuxedo-drivers-kmod/tuxedo-drivers-kmod-common.spec | grep -E '^Version:' | awk '{print $2}')
-
-
-rpm-ostree install ~/rpmbuild/RPMS/x86_64/akmod-tuxedo-drivers-$TD_VERSION-1.fc41.x86_64.rpm ~/rpmbuild/RPMS/x86_64/tuxedo-drivers-kmod-$TD_VERSION-1.fc41.x86_64.rpm ~/rpmbuild/RPMS/x86_64/tuxedo-drivers-kmod-common-$TD_VERSION-1.fc41.x86_64.rpm ~/rpmbuild/RPMS/x86_64/kmod-tuxedo-drivers-$TD_VERSION-1.fc41.x86_64.rpm
-
-KERNEL_VERSION="$(rpm -q kernel --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}')"
-
-akmods --force --kernels "${KERNEL_VERSION}" --kmod "tuxedo-drivers-kmod"
+akmods --force --kernels "${KERNEL}" --kmod "tuxedo-drivers"
 
 rpm-ostree install cargo rust meson ninja-build libadwaita-devel gtk4-devel
 git clone https://github.com/BrickMan240/tuxedo-rs
